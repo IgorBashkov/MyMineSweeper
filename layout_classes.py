@@ -8,21 +8,42 @@ class Cell(ttk.Frame):
 
     def __init__(self, root, lbl_text=''):
         super().__init__(master=root, width=4, height=4)
+        self.root = root
+        self.text = lbl_text
         self.opened = False
-        self.bomb = False
+        self.bomb = True if lbl_text == '9' else False
         self.mark_bomb = False
 
-        self.lbl_cell = ttk.Label(self, text=lbl_text, width=3)
+        self.lbl_cell = ttk.Label(self,
+                                  text='*' if self.bomb else lbl_text,
+                                  width=3)
         self.lbl_cell.grid(sticky='swen', column=0, row=0)
 
-        # self.btn_cell = ttk.Button(self, text='B', width=3)
-        # self.btn_cell.grid(sticky='swen', column=0, row=0)
+        self.btn_cell = ttk.Button(self, text='',
+                                   width=3,
+                                   command=self.open)
+        self.btn_cell.grid(sticky='swen', column=0, row=0)
+        self.btn_cell.bind('<ButtonPress-3>', self.mark)
+
+    def open(self, *args):
+        if not self.mark_bomb and not self.opened:
+            self.opened = True
+            self.btn_cell.grid_remove()
+            x, y = int(self.grid_info()['column']), int(self.grid_info()['row'])
+            if not self.text:
+                for i, j in Field.bomb_mapper(x, y, self.root.field_size, set()):
+                    self.root.cells[i][j].btn_cell.invoke()
+
+    def mark(self, *args):
+        self.mark_bomb = not self.mark_bomb
+        self.btn_cell.configure(text='*' * self.mark_bomb)
 
 
 class GameField(ttk.Frame):
-    def __init__(self, root, field=None):
+    def __init__(self, root, field=None, field_size=(1, 1)):
         super().__init__(master=root, height=400, width=400)
         # mapper = kwargs['mapper']
+        self.field_size = field_size
         print(field)
         self.cells = []
         for i, lst in enumerate(field.field):
@@ -65,7 +86,7 @@ class MainWindow:
         self.lbl_remaining_mines = ttk.Label(self.frm_game, text='Remaining\nmines')
         self.lbl_remaining_mines.grid(column=2, row=0, padx=5, pady=5)
 
-        self.frm_field = GameField(root, field=self.mapper)
+        self.frm_field = GameField(root, field=self.mapper, field_size=self.field_size)
         self.frm_field.grid(column=0, row=2, padx=5, pady=5, sticky='swen')
         # self.field()
 
@@ -78,13 +99,6 @@ class MainWindow:
     @staticmethod
     def run():
         pass
-
-    @staticmethod
-    def get_bombs(n, size):
-        bombs = set()
-        while len(bombs) < n:
-            bombs.add((randint(0, size[0] - 1), randint(0, size[1] - 1)))
-        return bombs
 
     def hide_button(self, i, j):
         print(i, j)
