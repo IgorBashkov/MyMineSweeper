@@ -25,8 +25,6 @@ class Cell(ttk.Frame):
                                   )
         self.lbl_cell.grid(sticky='swen', column=0, row=0, ipady=4)
 
-        self.open_wrapper = (root.register(self.open), '%P', '%V')
-
         self.btn_cell = ttk.Button(self, width=3)
         self.btn_cell.grid(sticky='swen', column=0, row=0)
         self.btn_cell.bind('<ButtonPress-3>', self.mark)
@@ -48,6 +46,10 @@ class Cell(ttk.Frame):
     def mark(self, *args):
         print(args)
         self.mark_bomb = not self.mark_bomb
+        if self.mark_bomb:
+            self.root.event_generate('<<mark_added>>')
+        else:
+            self.root.event_generate('<<mark_deleted>>')
         self.btn_cell.configure(text='*' * self.mark_bomb)
 
 
@@ -55,7 +57,7 @@ class GameField(ttk.Frame):
     def __init__(self, root, field=None, field_size=(1, 1)):
         super().__init__(master=root, height=400, width=400)
         self.field_size = field_size
-        # print(field)
+        self.field = field
         self.cells = []
         for i, lst in enumerate(field.field):
             self.cells.append([])
@@ -66,25 +68,34 @@ class GameField(ttk.Frame):
         self.bind('<<game_over>>', self.end)
 
     def end(self, *args):
-        for cells in self.cells:
-            for cell in cells:
-                cell.btn_cell.state(['readonly'])
+        for x, y in self.field.bombs:
+            cell = self.grid_slaves(row=y, column=x)[0]
+            cell.opened = True
+            cell.btn_cell.destroy()
+            cell.lbl_cell.configure(background='red')
+        for cell in self.grid_slaves():
+            if not cell.opened:
+                cell.btn_cell.unbind('<ButtonPress-1>')
+                cell.btn_cell.state(['disabled'])
 
 
 class MainWindow:
 
     def __init__(self, root):
+
         root.title('Igor\'s minesweeper')
         root.configure(background='#6F6F6F')
         root.columnconfigure(0, minsize=100)
-        root.rowconfigure(0, minsize=100)
+        root.rowconfigure(0, minsize=25)
         self.root = root
         self.buttons = []
         self.bombs_num = 10
+        self.remaining_mines = tk.IntVar()
+        self.remaining_mines.set(self.bombs_num)
         self.field_size = (10, 10)
         self.mapper = Field(*self.field_size, self.bombs_num)
 
-        self.frm_menu = ttk.Frame(root, width=400, height=100)
+        self.frm_menu = ttk.Frame(root, width=400, height=50)
         self.frm_menu.grid(column=0, row=0, padx=5, pady=5, sticky='swen')
 
         self.btn_options = ttk.Button(self.frm_menu, text='Options', command=self.options)
@@ -93,6 +104,7 @@ class MainWindow:
         self.frm_game = ttk.Frame(root, width=400, height=100)
         self.frm_game.grid(column=0, row=1, padx=5, pady=5, sticky='swen')
         self.frm_game.rowconfigure(0, weight=1)
+        self.frm_game.columnconfigure((0, 1, 2), weight=1)
 
         self.lbl_clock = ttk.Label(self.frm_game, text='Time\nWill be\nhere')
         self.lbl_clock.grid(column=0, row=0, padx=5, pady=5)
@@ -100,11 +112,18 @@ class MainWindow:
         self.btn_start = ttk.Button(self.frm_game, text='RUN!\nRUN!\nRUN!', command=self.run)
         self.btn_start.grid(column=1, row=0, padx=5, pady=5)
 
-        self.lbl_remaining_mines = ttk.Label(self.frm_game, text='Remaining\nmines')
+        self.lbl_remaining_mines = ttk.Label(self.frm_game,
+                                             textvariable=self.remaining_mines
+                                             )
         self.lbl_remaining_mines.grid(column=2, row=0, padx=5, pady=5)
 
         self.frm_field = GameField(root, field=self.mapper, field_size=self.field_size)
         self.frm_field.grid(column=0, row=2, padx=5, pady=5, sticky='swen')
+
+        self.root.bind('<<game_over>>', self.end)
+
+        self.root.bind('<<mark_added>>', self.mines_decrease)
+        self.root.bind('<<mark_deleted>>', self.mines_increase)
 
         root.rowconfigure(2, weight=1)
 
@@ -112,15 +131,24 @@ class MainWindow:
     def options():
         pass
 
+    def mines_decrease(self, *args):
+        self.remaining_mines.set(self.remaining_mines.get() - 1)
+
+    def mines_increase(self, *args):
+        self.remaining_mines.set(self.remaining_mines.get() + 1)
+
     def run(self):
         for cells in self.frm_field.cells:
             for cell in cells:
-
                 cell.destroy()
         self.frm_field.__init__(self.root,
                                 field=Field(*self.field_size, self.bombs_num),
                                 field_size=self.field_size)
         self.frm_field.grid(column=0, row=2, padx=5, pady=5, sticky='swen')
+
+    def end(self, *args):
+        self.btn_start.configure(text='Game\nOver!!!\nAgain?')
+        print('Over')
 
 
 
