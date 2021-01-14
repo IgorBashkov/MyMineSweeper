@@ -25,10 +25,11 @@ class Cell(ttk.Frame):
                                   )
         self.lbl_cell.grid(sticky='swen', column=0, row=0, ipady=4)
 
-        self.btn_cell = ttk.Button(self, width=3)
+        self.btn_cell = ttk.Button(self, width=3, command=self.open)
         self.btn_cell.grid(sticky='swen', column=0, row=0)
         self.btn_cell.bind('<ButtonPress-3>', self.mark)
-        self.btn_cell.bind('<ButtonPress-1>', self.open)
+        # self.btn_cell.bind('<ButtonPress-1>', self.open)
+        self.btn_cell.bind('<ButtonRelease-1><ButtonRelease-3>', self.combo)
         # self.bind('<<game_over>>', self.root.end)
 
     def open(self, *args):
@@ -51,6 +52,9 @@ class Cell(ttk.Frame):
         else:
             self.root.event_generate('<<mark_deleted>>')
         self.btn_cell.configure(text='*' * self.mark_bomb)
+
+    def combo(self, *args):
+        print('Yep!')
 
 
 class GameField(ttk.Frame):
@@ -76,6 +80,7 @@ class GameField(ttk.Frame):
         for cell in self.grid_slaves():
             if not cell.opened:
                 cell.btn_cell.unbind('<ButtonPress-1>')
+                cell.btn_cell.unbind('<ButtonPress-3>')
                 cell.btn_cell.state(['disabled'])
 
 
