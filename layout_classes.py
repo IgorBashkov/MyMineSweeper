@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import ttk
-from random import randint
 from logic_classes import Field
 
 
@@ -25,7 +24,7 @@ class AddMenu:
 
 class Cell(ttk.Frame):
 
-    def __init__(self, root, lbl_text=''):
+    def __init__(self, root, lbl_text='', pos_x=0, pos_y=0):
         super().__init__(master=root, width=4, height=4, borderwidth=0)
         self.rowconfigure(0, weight=0)
         self.columnconfigure(0, weight=0)
@@ -34,20 +33,19 @@ class Cell(ttk.Frame):
         self.opened = False
         self.bomb = True if lbl_text == '9' else False
         self.mark_bomb = False
+        self.pos_x = pos_x
+        self.pos_y = pos_y
 
         self.lbl_cell = ttk.Label(self,
                                   text='*' if self.bomb else lbl_text,
                                   width=4,
                                   anchor='center',
-
-                                  # relief='sunken'
                                   )
         self.lbl_cell.grid(sticky='swen', column=0, row=0, ipady=4)
 
         self.btn_cell = ttk.Button(self, width=3, command=self.open)
         self.btn_cell.grid(sticky='swen', column=0, row=0)
         self.btn_cell.bind('<ButtonPress-3>', self.mark)
-        # self.btn_cell.bind('<ButtonPress-1>', self.open)
         self.lbl_cell.bind('<ButtonRelease-1><ButtonRelease-3>', self.combo)
 
     def open(self, *args):
@@ -55,7 +53,6 @@ class Cell(ttk.Frame):
             self.opened = True
             self.root.closed -= 1
             self.btn_cell.destroy()
-            print(self.root.closed)
             x, y = int(self.grid_info()['column']), int(self.grid_info()['row'])
             if not self.text:
                 for i, j in Field.bomb_mapper(x, y, self.root.field_size, set()):
@@ -68,7 +65,6 @@ class Cell(ttk.Frame):
                 print('Win')
 
     def mark(self, *args):
-        print(args)
         self.mark_bomb = not self.mark_bomb
         if self.mark_bomb:
             self.root.event_generate('<<mark_added>>')
@@ -77,7 +73,17 @@ class Cell(ttk.Frame):
         self.btn_cell.configure(text='*' * self.mark_bomb)
 
     def combo(self, *args):
-        print('Yep!', args)
+        area = Field.bomb_mapper(
+            self.pos_x,
+            self.pos_y,
+            self.root.field_size,
+            set()
+        )
+        marks = sum(self.root.cells[x][y].mark_bomb for x, y in area)
+        if marks == int(self.lbl_cell['text']):
+            for x, y in area:
+                if not self.root.cells[x][y].opened:
+                    self.root.cells[x][y].open()
 
 
 class GameField(ttk.Frame):
@@ -92,6 +98,8 @@ class GameField(ttk.Frame):
             for j, num in enumerate(lst):
                 game_cell = Cell(self,
                                  lbl_text=str(num) if num else '',
+                                 pos_x=i,
+                                 pos_y=j,
                                  )
                 game_cell.grid(sticky='swen', column=i, row=j)
                 self.cells[i].append(game_cell)
@@ -122,7 +130,6 @@ class MainWindow:
         AddMenu(root)
         root.configure(background='#6F6F6F')
         root.columnconfigure(0, minsize=100)
-        # root.rowconfigure(0, minsize=60)
         self.root = root
         self.buttons = []
         self.bombs_num = 10
@@ -148,7 +155,6 @@ class MainWindow:
 
         self.frm_field = GameField(root,
                                    mines=self.bombs_num,
-                                   # field=self.mapper,
                                    field_size=self.field_size,
                                    )
         self.frm_field.grid(column=0, row=1, padx=5, pady=5, sticky='swen')
