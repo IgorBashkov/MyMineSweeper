@@ -6,6 +6,7 @@ from logic_classes import Field
 class AddMenu:
 
     def __init__(self, root):
+
         root.resizable(False, False)
         root.option_add('*tearOff', False)
         menu_bar = tk.Menu(root)
@@ -16,10 +17,16 @@ class AddMenu:
         menu_bar.add_cascade(menu=menu_game, label='Game')
         menu_bar.add_cascade(menu=menu_results, label='Results')
         menu_bar.add_cascade(menu=menu_about, label='About')
+        hardness = tk.StringVar()
         commands = ('Easy', 'Medium', 'Hard', 'Custom')
-        for command in commands:
-            menu_game.add_command(label=command, command=lambda: True)
-            menu_results.add_command(label=command, command=lambda: True)
+        for dif in commands:
+            menu_game.add_radiobutton(
+                label=dif,
+                variable=hardness,
+                value=dif,
+                command=lambda: root.event_generate(f'<<{hardness.get()}>>'),
+            )
+            menu_results.add_command(label=dif, command=lambda: True)
 
 
 class Cell(ttk.Frame):
@@ -28,6 +35,7 @@ class Cell(ttk.Frame):
         super().__init__(master=root, width=4, height=4, borderwidth=0)
         self.rowconfigure(0, weight=0)
         self.columnconfigure(0, weight=0)
+        # self.configure(background='#6F6F6F')
         self.root = root
         self.text = lbl_text
         self.opened = False
@@ -40,6 +48,7 @@ class Cell(ttk.Frame):
                                   text='*' if self.bomb else lbl_text,
                                   width=4,
                                   anchor='center',
+                                  # relief='groove',
                                   )
         self.lbl_cell.grid(sticky='swen', column=0, row=0, ipady=4)
 
@@ -50,6 +59,7 @@ class Cell(ttk.Frame):
 
     def open(self, *args):
         if not self.mark_bomb and not self.opened:
+            self.event_generate('<<game_started>>')
             self.opened = True
             self.root.closed -= 1
             self.btn_cell.destroy()
@@ -89,6 +99,7 @@ class Cell(ttk.Frame):
 class GameField(ttk.Frame):
     def __init__(self, root, mines=1,  field_size=(1, 1)):
         super().__init__(master=root, height=400, width=400)
+        self.game_type = 2
         self.field_size = field_size
         self.field = Field(*field_size, mines)
         self.closed = field_size[0] * field_size[1] - mines
@@ -136,6 +147,12 @@ class MainWindow:
         self.remaining_mines = tk.IntVar()
         self.remaining_mines.set(self.bombs_num)
         self.field_size = (10, 10)
+        self.difficulty = {
+            '<<Easy>>': (10, 10, 10),
+            '<<Medium>>': (20, 20, 10),
+            '<<Hard>>': (30, 20, 10),
+            '<<Custom>>': (10, 10, 100),
+        }
 
         self.frm_game = ttk.Frame(root, width=400, height=100)
         self.frm_game.grid(column=0, row=0, padx=5, pady=5, sticky='swen')
@@ -163,12 +180,17 @@ class MainWindow:
         self.root.bind('<<mark_added>>', self.mines_decrease)
         self.root.bind('<<mark_deleted>>', self.mines_increase)
         self.root.bind('<<you_win!>>', self.win)
+        self.root.bind('<<game_started>>', self.start)
+
+        self.root.bind('<<Hard>>', self.options)
+        for k, v in self.difficulty.items():
+            pass
+            # self.root.bind(k, lambda e: self.options)  # lambda e: print(v))
 
         root.rowconfigure(2, weight=1)
 
-    @staticmethod
-    def options():
-        pass
+    def options(self, *args):
+        print('Test', args, self.root.menu_game.entrycget(0, 'label'))
 
     def mines_decrease(self, *args):
         self.remaining_mines.set(self.remaining_mines.get() - 1)
@@ -177,6 +199,7 @@ class MainWindow:
         self.remaining_mines.set(self.remaining_mines.get() + 1)
 
     def restart(self):
+        # print(self.root.menu)
         for cells in self.frm_field.cells:
             for cell in cells:
                 cell.destroy()
@@ -185,15 +208,26 @@ class MainWindow:
                                 field_size=self.field_size)
         self.frm_field.grid(column=0, row=1, padx=5, pady=5, sticky='swen')
         self.remaining_mines.set(self.bombs_num)
+        self.lbl_clock.configure(text='Time\nWill be\nhere')
+        self.root.bind('<<game_started>>', self.start)
         self.btn_start.configure(text='Have\nFun!')
 
     def end(self, *args):
         self.btn_start.configure(text='Game\nOver!!!\nAgain?')
+        self.lbl_clock.configure(text='End')
         print('Over')
 
     def win(self, *args):
         self.btn_start.configure(text='You\nWin!!!\nAgain?')
+        self.lbl_clock.configure(text='End')
         print('Over')
+
+    def start(self, *args):
+        self.lbl_clock.configure(text='Tic-Tac')
+        self.root.unbind('<<game_started>>')
+        print('GoGoGo!')
+
+
 
 
 
