@@ -63,7 +63,7 @@ class Cell(ttk.Frame):
             self.opened = True
             self.root.closed -= 1
             self.btn_cell.destroy()
-            x, y = int(self.grid_info()['column']), int(self.grid_info()['row'])
+            y, x = int(self.grid_info()['column']), int(self.grid_info()['row'])
             if not self.text:
                 for i, j in Field.bomb_mapper(x, y, self.root.field_size, set()):
                     self.root.cells[i][j].open()
@@ -84,8 +84,8 @@ class Cell(ttk.Frame):
 
     def combo(self, *args):
         area = Field.bomb_mapper(
-            self.pos_x,
             self.pos_y,
+            self.pos_x,
             self.root.field_size,
             set()
         )
@@ -98,7 +98,7 @@ class Cell(ttk.Frame):
 
 class GameField(ttk.Frame):
     def __init__(self, root, mines=1,  field_size=(1, 1)):
-        super().__init__(master=root, height=400, width=400)
+        super().__init__(master=root, height=200, width=200)
         self.game_type = 2
         self.field_size = field_size
         self.field = Field(*field_size, mines)
@@ -109,16 +109,16 @@ class GameField(ttk.Frame):
             for j, num in enumerate(lst):
                 game_cell = Cell(self,
                                  lbl_text=str(num) if num else '',
-                                 pos_x=i,
-                                 pos_y=j,
+                                 pos_x=j,
+                                 pos_y=i,
                                  )
-                game_cell.grid(sticky='swen', column=i, row=j)
+                game_cell.grid(sticky='swen', column=j, row=i)
                 self.cells[i].append(game_cell)
         self.bind('<<game_over>>', self.end)
         self.bind('<<you_win!>>', self.unbind_open)
 
     def end(self, *args):
-        for x, y in self.field.bombs:
+        for y, x in self.field.bombs:
             cell = self.grid_slaves(row=y, column=x)[0]
             cell.opened = True
             cell.btn_cell.destroy()
@@ -143,16 +143,10 @@ class MainWindow:
         root.columnconfigure(0, minsize=100)
         self.root = root
         self.buttons = []
-        self.bombs_num = 10
+        self.bombs_num = 100
         self.remaining_mines = tk.IntVar()
         self.remaining_mines.set(self.bombs_num)
-        self.field_size = (10, 10)
-        self.difficulty = {
-            '<<Easy>>': (10, 10, 10),
-            '<<Medium>>': (20, 20, 10),
-            '<<Hard>>': (30, 20, 10),
-            '<<Custom>>': (10, 10, 100),
-        }
+        self.field_size = (30, 20)
 
         self.frm_game = ttk.Frame(root, width=400, height=100)
         self.frm_game.grid(column=0, row=0, padx=5, pady=5, sticky='swen')
@@ -182,15 +176,16 @@ class MainWindow:
         self.root.bind('<<you_win!>>', self.win)
         self.root.bind('<<game_started>>', self.start)
 
-        self.root.bind('<<Hard>>', self.options)
-        for k, v in self.difficulty.items():
-            pass
-            # self.root.bind(k, lambda e: self.options)  # lambda e: print(v))
-
+        self.root.bind('<<Easy>>', lambda e: self.options((10, 10, 10)))
+        self.root.bind('<<Medium>>', lambda e: self.options((15, 20, 40)))
+        self.root.bind('<<Hard>>', lambda e: self.options((30, 20, 100)))
+        self.root.bind('<<Custom>>', lambda e: self.options((10, 10, 10)))
         root.rowconfigure(2, weight=1)
 
-    def options(self, *args):
-        print('Test', args, self.root.menu_game.entrycget(0, 'label'))
+    def options(self, opt=(10, 10, 10), *args):
+        self.field_size = opt[:-1]
+        self.bombs_num = opt[-1]
+        self.restart()
 
     def mines_decrease(self, *args):
         self.remaining_mines.set(self.remaining_mines.get() - 1)
@@ -199,10 +194,7 @@ class MainWindow:
         self.remaining_mines.set(self.remaining_mines.get() + 1)
 
     def restart(self):
-        # print(self.root.menu)
-        for cells in self.frm_field.cells:
-            for cell in cells:
-                cell.destroy()
+        self.frm_field.destroy()
         self.frm_field.__init__(self.root,
                                 mines=self.bombs_num,
                                 field_size=self.field_size)

@@ -33,7 +33,7 @@ class Field:
         """
         bombs = set()
         while len(bombs) < n:
-            bombs.add((randint(0, x_size - 1), randint(0, y_size - 1)))
+            bombs.add((randint(0, y_size - 1), randint(0, x_size - 1)))
         return bombs
 
     @staticmethod
@@ -52,7 +52,7 @@ class Field:
         for i in range(x - 1, x + 2):
             for j in range(y - 1, y + 2):
                 if not (i == x and j == y) and i > -1 and j > -1 \
-                        and i < field_size[0] and j < field_size[1] \
+                        and i < field_size[1] and j < field_size[0] \
                         and (i, j) not in bombs:
                     mapper.append((i, j))
         return mapper
