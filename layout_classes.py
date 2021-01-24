@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from logic_classes import Field
+from tkinter import font
 
 
 class AddMenu:
@@ -30,9 +31,16 @@ class AddMenu:
 
 
 class Cell(ttk.Frame):
+    text_color = {'1': 'blue', '2': 'green', '3': 'red',
+                  '4': 'brown', '5': 'pink', '6': 'crimson',
+                  '7': 'orange', '8': 'coral', '9': 'black',
+                  }
 
     def __init__(self, root, lbl_text='', pos_x=0, pos_y=0):
-        super().__init__(master=root, width=4, height=4, borderwidth=0)
+        self.flag = tk.PhotoImage(file='static/flag.gif')
+        self.mine = tk.PhotoImage(file='static/mine2.gif')
+        text_font = font.Font(weight='bold', size=12)
+        super().__init__(master=root, width=20, height=20, borderwidth=0)
         self.rowconfigure(0, weight=0)
         self.columnconfigure(0, weight=0)
         # self.configure(background='#6F6F6F')
@@ -45,14 +53,25 @@ class Cell(ttk.Frame):
         self.pos_y = pos_y
 
         self.lbl_cell = ttk.Label(self,
-                                  text='*' if self.bomb else lbl_text,
-                                  width=4,
+                                  text=lbl_text,
+                                  foreground=Cell.text_color.get(lbl_text, 'black'),
+                                  width=3,
                                   anchor='center',
+                                  font=text_font,
+                                  compound='image' if self.bomb else 'text',
+                                  image=self.mine
                                   # relief='groove',
                                   )
-        self.lbl_cell.grid(sticky='swen', column=0, row=0, ipady=4)
+        self.lbl_cell.grid(sticky='swen', column=0, row=0,
+                           ipady=0 if self.bomb else 6,
+                           ipadx=0 if self.bomb else 2)
 
-        self.btn_cell = ttk.Button(self, width=3, command=self.open)
+        self.btn_cell = ttk.Button(self,
+                                   width=3,
+                                   command=self.open,
+                                   image=self.flag,
+                                   compound='text',
+                                   )
         self.btn_cell.grid(sticky='swen', column=0, row=0)
         self.btn_cell.bind('<ButtonPress-3>', self.mark)
         self.lbl_cell.bind('<ButtonRelease-1><ButtonRelease-3>', self.combo)
@@ -80,7 +99,7 @@ class Cell(ttk.Frame):
             self.root.event_generate('<<mark_added>>')
         else:
             self.root.event_generate('<<mark_deleted>>')
-        self.btn_cell.configure(text='*' * self.mark_bomb)
+        self.btn_cell.configure(compound='image' if self.mark_bomb else 'text')
 
     def combo(self, *args):
         area = Field.bomb_mapper(
@@ -122,14 +141,19 @@ class GameField(ttk.Frame):
             cell = self.grid_slaves(row=y, column=x)[0]
             cell.opened = True
             cell.btn_cell.destroy()
-            cell.lbl_cell.configure(background='red')
+            # cell.lbl_cell.configure(background='red')
         self.unbind_open()
 
     def unbind_open(self, *args):
+        print(args)
         for cell in self.grid_slaves():
             if not cell.opened:
+
                 cell.btn_cell.unbind('<ButtonPress-1>')
                 cell.btn_cell.unbind('<ButtonPress-3>')
+
+                # cell.event_generate('<<mark_added>>') if not args else None
+                cell.btn_cell.configure(compound='text' if not args else 'image')
                 cell.btn_cell.state(['disabled'])
 
 
@@ -143,10 +167,10 @@ class MainWindow:
         root.columnconfigure(0, minsize=100)
         self.root = root
         self.buttons = []
-        self.bombs_num = 100
+        self.bombs_num = 10
         self.remaining_mines = tk.IntVar()
         self.remaining_mines.set(self.bombs_num)
-        self.field_size = (30, 20)
+        self.field_size = (10, 10)
 
         self.frm_game = ttk.Frame(root, width=400, height=100)
         self.frm_game.grid(column=0, row=0, padx=5, pady=5, sticky='swen')
