@@ -37,6 +37,8 @@ class Cell(ttk.Frame):
                   }
 
     def __init__(self, root, lbl_text='', pos_x=0, pos_y=0):
+        # self.style = ttk.Style()
+        # self.style.theme_use('default')
         self.flag = tk.PhotoImage(file='static/flag.gif')
         self.mine = tk.PhotoImage(file='static/mine2.gif')
         text_font = font.Font(weight='bold', size=12)
@@ -51,6 +53,8 @@ class Cell(ttk.Frame):
         self.mark_bomb = False
         self.pos_x = pos_x
         self.pos_y = pos_y
+        self.area = self.root.field.mapper_dict[(self.pos_y, self.pos_x)]
+        self.pressed = False
 
         self.lbl_cell = ttk.Label(self,
                                   text=lbl_text,
@@ -62,6 +66,7 @@ class Cell(ttk.Frame):
                                   image=self.mine
                                   # relief='groove',
                                   )
+
         self.lbl_cell.grid(sticky='swen', column=0, row=0,
                            ipady=0 if self.bomb else 6,
                            ipadx=0 if self.bomb else 2)
@@ -73,8 +78,15 @@ class Cell(ttk.Frame):
                                    compound='text',
                                    )
         self.btn_cell.grid(sticky='swen', column=0, row=0)
-        self.btn_cell.bind('<ButtonPress-3>', self.mark)
+
         self.lbl_cell.bind('<ButtonRelease-1><ButtonRelease-3>', self.combo)
+        # self.bind('<ButtonRelease-1><ButtonRelease-3>', self.unpressed)
+        self.lbl_cell.bind('<ButtonPress-1><ButtonPress-3>', self.aim_area)
+        self.lbl_cell.bind('<Leave>', self.unpressed)
+        self.lbl_cell.bind('<Enter><ButtonPress-1><ButtonPress-3>', self.aim_area)
+        self.btn_cell.bind('<Leave>', self.unpressed)
+        self.btn_cell.bind('<Enter><ButtonPress-1><ButtonPress-3>', self.aim_area)
+        self.btn_cell.bind('<ButtonPress-3>', self.mark)
 
     def open(self, *args):
         if not self.mark_bomb and not self.opened:
@@ -84,7 +96,7 @@ class Cell(ttk.Frame):
             self.btn_cell.destroy()
             y, x = int(self.grid_info()['column']), int(self.grid_info()['row'])
             if not self.text:
-                for i, j in Field.bomb_mapper(x, y, self.root.field_size, set()):
+                for i, j in self.area:
                     self.root.cells[i][j].open()
             if self.text == '9':
                 self.lbl_cell.configure(background='red')
@@ -102,17 +114,23 @@ class Cell(ttk.Frame):
         self.btn_cell.configure(compound='image' if self.mark_bomb else 'text')
 
     def combo(self, *args):
-        area = Field.bomb_mapper(
-            self.pos_y,
-            self.pos_x,
-            self.root.field_size,
-            set()
-        )
-        marks = sum(self.root.cells[x][y].mark_bomb for x, y in area)
+        self.unpressed()
+        self.pressed = False
+        marks = sum(self.root.cells[x][y].mark_bomb for x, y in self.area)
         if marks == int(self.lbl_cell['text']):
-            for x, y in area:
+            for x, y in self.area:
                 if not self.root.cells[x][y].opened:
                     self.root.cells[x][y].open()
+
+    def aim_area(self, *args):
+        for x, y in self.area:
+            if not self.root.cells[x][y].opened and not self.root.cells[x][y].mark_bomb:
+                self.root.cells[x][y].btn_cell.state(['pressed'])
+
+    def unpressed(self, *args):
+        for x, y in self.area:
+            if not self.root.cells[x][y].opened and not self.root.cells[x][y].mark_bomb:
+                self.root.cells[x][y].btn_cell.state(['!pressed'])
 
 
 class GameField(ttk.Frame):

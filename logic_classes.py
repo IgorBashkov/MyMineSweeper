@@ -20,6 +20,7 @@ class Field:
         self.bombs = self.get_bombs(mines, x_size, y_size)  # mines coordinates
         self.field = [[0 for i in range(x_size)] for _ in range(y_size)]  # field initialization
         self.fill_field_list()
+        self.mapper_dict = Field.fill_mapper_dict(self.size)
 
     @staticmethod
     def get_bombs(n: int, x_size: int, y_size: int):
@@ -56,6 +57,19 @@ class Field:
                         and (i, j) not in bombs:
                     mapper.append((i, j))
         return mapper
+
+    @staticmethod
+    def fill_mapper_dict(field_size: tuple):
+        """
+        This method create list of neighbours for every cell
+        :param field_size: size of field
+        :return: dict: keys are tuples, values are lists
+        """
+        result = {}
+        for i in range(field_size[1]):
+            for j in range(field_size[0]):
+                result[(i, j)] = Field.bomb_mapper(i, j, field_size, {})
+        return result
 
     def fill_field_list(self):
         """
