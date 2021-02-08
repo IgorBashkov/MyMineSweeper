@@ -3,9 +3,39 @@ from tkinter import ttk
 from tkinter import font
 
 
+class DialogWindow:
+
+    def __init__(self, root, **kwargs):
+        self.root = root
+        self.dialog = tk.Toplevel(root)
+        self.dialog.title('Custom size')
+        self.dialog.geometry('200x100+300+300')
+        self.first_lbl = ttk.Label(self.dialog, text=kwargs['first_text'])
+        self.first_lbl.grid(row=0, column=0)
+        self.second_lbl = ttk.Label(self.dialog, text=kwargs['second_text'])
+        self.second_lbl.grid(row=0, column=1)
+
+        self.ok_btn = ttk.Button(self.dialog, text='OK', command=self.dismiss)
+        self.ok_btn.grid(row=2, column=0)
+        self.cancel_btn = ttk.Button(self.dialog, text='Cancel', command=self.dismiss)
+        self.cancel_btn.grid(row=2, column=1)
+
+        self.dialog.protocol("WM_DELETE_WINDOW", self.dismiss)
+        self.dialog.transient(self.root)
+        self.dialog.wait_visibility()
+        self.dialog.grab_set()
+        self.dialog.wait_window()
+
+
+
+
+    def dismiss(self):
+        self.dialog.grab_release()
+        self.dialog.destroy()
+
+
 class AddMenu:
     def __init__(self, root):
-
         root.resizable(False, False)
         root.option_add('*tearOff', False)
         menu_bar = tk.Menu(root)

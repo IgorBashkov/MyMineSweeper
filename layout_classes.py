@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from logic_classes import Field
-from elements import AddMenu, Cell
+from elements import AddMenu, Cell, DialogWindow
 import threading
 import time
 
@@ -95,7 +95,7 @@ class MainWindow:
         self.root.bind('<<Easy>>', lambda e: self.options((10, 10, 10)))
         self.root.bind('<<Medium>>', lambda e: self.options((15, 20, 40)))
         self.root.bind('<<Hard>>', lambda e: self.options((30, 20, 100)))
-        self.root.bind('<<Custom>>', lambda e: self.options((10, 10, 10)))
+        self.root.bind('<<Custom>>', self.custom)
 
         root.rowconfigure(2, weight=1)
 
@@ -147,5 +147,8 @@ class MainWindow:
         self.clock.daemon = True
         self.lbl_clock.event_generate('<<Rise_time>>')
         self.clock.start()
+
+    def custom(self, event):
+        DialogWindow(self.root, first_text='Mines', second_text='Field')
 
 
