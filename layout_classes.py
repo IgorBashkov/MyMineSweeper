@@ -47,7 +47,6 @@ class GameField(ttk.Frame):
 class MainWindow:
 
     def __init__(self, root):
-
         root.title('Igor\'s minesweeper')
         AddMenu(root)
         root.configure(background='#6F6F6F')
@@ -62,6 +61,7 @@ class MainWindow:
         self.clock = None
         self.remaining_mines.set(self.bombs_num)
         self.field_size = (10, 10)
+        self.game_type = 'Easy'
 
         self.frm_game = ttk.Frame(root, width=400, height=100)
         self.frm_game.grid(column=0, row=0, padx=5, pady=5, sticky='swen')
@@ -69,7 +69,6 @@ class MainWindow:
         self.frm_game.columnconfigure((0, 1, 2), weight=1, minsize=93)
 
         self.lbl_clock = ttk.Label(self.frm_game, textvariable=self.time)
-
         self.lbl_clock.grid(column=0, row=0, padx=5, pady=5)
 
         self.btn_start = ttk.Button(self.frm_game, text='Wait\nfor\nmove', command=self.restart)
@@ -92,14 +91,16 @@ class MainWindow:
         self.root.bind('<<you_win!>>', self.win)
         self.root.bind('<<game_started>>', self.start)
 
-        self.root.bind('<<Easy>>', lambda e: self.options((10, 10, 10)))
-        self.root.bind('<<Medium>>', lambda e: self.options((15, 20, 40)))
-        self.root.bind('<<Hard>>', lambda e: self.options((30, 20, 100)))
+        self.root.bind('<<Easy>>', lambda e: self.options((10, 10, 10), hrd='Easy'))
+        self.root.bind('<<Medium>>', lambda e: self.options((15, 20, 40), hrd='Medium'))
+        self.root.bind('<<Hard>>', lambda e: self.options((30, 20, 100), hrd='Hard'))
         self.root.bind('<<Custom>>', self.custom)
 
         root.rowconfigure(2, weight=1)
 
-    def options(self, opt=(10, 10, 10), *args):
+    def options(self, opt=(10, 10, 10), hrd='Custom'):
+        self.game_type = hrd
+        print(hrd)
         self.field_size = opt[:-1]
         self.bombs_num = opt[-1]
         self.restart()
@@ -149,6 +150,10 @@ class MainWindow:
         self.clock.start()
 
     def custom(self, event):
-        DialogWindow(self.root, first_text='Mines', second_text='Field')
+        DialogWindow(self.root, self, 'c',
+                     first_text='Field\nWidth',
+                     second_text='Field\nHeight',
+                     third_text='Mines')
+
 
 

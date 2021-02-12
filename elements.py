@@ -5,15 +5,24 @@ from tkinter import font
 
 class DialogWindow:
 
-    def __init__(self, root, **kwargs):
+    def __init__(self, root, parent, tp, **kwargs):
         self.root = root
         self.dialog = tk.Toplevel(root)
+        self.dialog.resizable(False, False)
         self.dialog.title('Custom size')
-        self.dialog.geometry('200x100+300+300')
-        self.first_lbl = ttk.Label(self.dialog, text=kwargs['first_text'])
-        self.first_lbl.grid(row=0, column=0)
-        self.second_lbl = ttk.Label(self.dialog, text=kwargs['second_text'])
-        self.second_lbl.grid(row=0, column=1)
+        self.dialog.geometry('200x80+300+300')
+        self.text_variables = {}
+        self.values = []
+        self.parent = parent
+        self.type = tp
+
+        for i, text in enumerate(kwargs.values()):
+            self.text_variables[text] = tk.IntVar() if tp == 'c' else tk.StringVar()
+            ttk.Label(self.dialog, text=text).grid(row=0, column=i)
+            ttk.Entry(self.dialog,
+                      width=6,
+                      textvariable=self.text_variables[text]).grid(row=1, column=i)
+            self.text_variables[text].set(1)
 
         self.ok_btn = ttk.Button(self.dialog, text='OK', command=self.dismiss)
         self.ok_btn.grid(row=2, column=0)
@@ -26,12 +35,16 @@ class DialogWindow:
         self.dialog.grab_set()
         self.dialog.wait_window()
 
-
-
-
     def dismiss(self):
         self.dialog.grab_release()
         self.dialog.destroy()
+        self.values = [i.get() for i in self.text_variables.values()]
+        print(self.values)
+        if self.type == 'c' and self.values[0] * self.values[1] >= self.values[2]:
+            self.parent.options(self.values)
+
+    def write_record(self):
+        pass
 
 
 class AddMenu:
