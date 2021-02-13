@@ -5,46 +5,70 @@ from tkinter import font
 
 class DialogWindow:
 
-    def __init__(self, root, parent, tp, **kwargs):
+    def __init__(self, root, **kwargs):
+        self.window_type = {
+            'custom_window': self.custom_window,
+            'record_window': self.record_window,
+        }
+        print(kwargs['title'])
         self.root = root
+        self.kwargs = kwargs
         self.dialog = tk.Toplevel(root)
         self.dialog.resizable(False, False)
-        self.dialog.title('Custom size')
-        self.dialog.geometry('200x80+300+300')
+        self.dialog.title(kwargs['title'])
+        self.dialog.geometry('+800+500')
         self.text_variables = {}
         self.values = []
-        self.parent = parent
-        self.type = tp
+        self.parent = kwargs['parent']
+        self.type = kwargs['target']
+        self.window_type[kwargs['target']]()
+        self.file = FileHandler(game_type=kwargs['game_type'])
 
-        for i, text in enumerate(kwargs.values()):
-            self.text_variables[text] = tk.IntVar() if tp == 'c' else tk.StringVar()
-            ttk.Label(self.dialog, text=text).grid(row=0, column=i)
-            ttk.Entry(self.dialog,
-                      width=6,
-                      textvariable=self.text_variables[text]).grid(row=1, column=i)
-            self.text_variables[text].set(1)
+        self.buttons_frm = ttk.Frame(self.dialog)
+        self.buttons_frm.grid(row=2, column=0, columnspan=3, pady=4, padx=2)
+        self.ok_btn = ttk.Button(self.buttons_frm, text='OK', command=self.ok)
+        self.ok_btn.grid(row=0, column=0)
+        self.cancel_btn = ttk.Button(self.buttons_frm, text='Cancel', command=self.cancel)
+        self.cancel_btn.grid(row=0, column=1)
 
-        self.ok_btn = ttk.Button(self.dialog, text='OK', command=self.dismiss)
-        self.ok_btn.grid(row=2, column=0)
-        self.cancel_btn = ttk.Button(self.dialog, text='Cancel', command=self.dismiss)
-        self.cancel_btn.grid(row=2, column=1)
-
-        self.dialog.protocol("WM_DELETE_WINDOW", self.dismiss)
+        self.dialog.protocol("WM_DELETE_WINDOW", self.cancel)
         self.dialog.transient(self.root)
         self.dialog.wait_visibility()
         self.dialog.grab_set()
         self.dialog.wait_window()
 
-    def dismiss(self):
+    def ok(self):
         self.dialog.grab_release()
         self.dialog.destroy()
         self.values = [i.get() for i in self.text_variables.values()]
         print(self.values)
-        if self.type == 'c' and self.values[0] * self.values[1] >= self.values[2]:
+        if self.type == 'custom_window' and self.values[0] * self.values[1] >= self.values[2]:
             self.parent.options(self.values)
+        if self.type == 'record_window':
+            # self.file.read()
+            self.file.update(name=self.text_variables['name'].get(), time=self.kwargs['time'])
 
-    def write_record(self):
-        pass
+    def cancel(self):
+        self.dialog.grab_release()
+        self.dialog.destroy()
+
+    def custom_window(self):
+        for i, text in enumerate(self.kwargs['labels']):
+            self.text_variables[text] = tk.IntVar()
+            ttk.Label(self.dialog, text=text).grid(row=0, column=i)
+            ttk.Entry(self.dialog,
+                      width=6,
+                      textvariable=self.text_variables[text]).grid(row=1, column=i)
+            self.text_variables[text].set(8)
+
+    def record_window(self):
+        for i, text in enumerate(self.kwargs['labels']):
+            ttk.Label(self.dialog, text=text).grid(row=0, column=i)
+        name = tk.StringVar()
+        name.set('Input name')
+        ttk.Entry(self.dialog, textvariable=name, width=11).grid(row=1, column=0)
+        ttk.Label(self.dialog, text=self.kwargs['time']).grid(row=1, column=1)
+        self.text_variables['name'] = name
 
 
 class AddMenu:
@@ -68,7 +92,17 @@ class AddMenu:
                 value=dif,
                 command=lambda: root.event_generate(f'<<{hardness.get()}>>'),
             )
-            menu_results.add_command(label=dif, command=lambda: True)
+            print(dif)
+            menu_results.add_command(
+                label=dif,
+                # variable=hardness,
+                # value=dif,
+                command=lambda: self.in_print(f'<<{dif}>>'),
+            )
+
+    @staticmethod
+    def in_print(value):
+        print(value)
 
 
 class Cell(ttk.Frame):
@@ -128,7 +162,7 @@ class Cell(ttk.Frame):
             self.opened = True
             self.root.closed -= 1
             self.btn_cell.destroy()
-            y, x = int(self.grid_info()['column']), int(self.grid_info()['row'])
+            # y, x = int(self.grid_info()['column']), int(self.grid_info()['row'])
             if not self.text:
                 for i, j in self.area:
                     self.root.cells[i][j].open()
@@ -137,7 +171,6 @@ class Cell(ttk.Frame):
                 self.root.event_generate('<<game_over>>')
             if not self.root.closed:
                 self.root.event_generate('<<you_win!>>')
-                print('Win')
 
     def mark(self, *args):
         self.mark_bomb = not self.mark_bomb
@@ -171,3 +204,30 @@ class Cell(ttk.Frame):
         for x, y in self.area:
             if not self.root.cells[x][y].opened and not self.root.cells[x][y].mark_bomb:
                 self.root.cells[x][y].btn_cell.state(['!pressed'])
+
+
+class FileHandler:
+    def __init__(self, **kwargs):
+        self.content = {}
+        self.kwargs = kwargs
+        self.file_name = f"saves/{self.kwargs['game_type']}.txt"
+        try:
+            self.read()
+        except FileNotFoundError:
+            self.create()
+
+    def read(self):
+        with open(self.file_name) as file:
+            for line in file:
+                key_value = line.strip().split('&|&')
+                self.content[key_value[0]] = key_value[1]
+
+    def update(self, **kwargs):
+        self.content[kwargs['name']] = kwargs['time']
+        with open(self.file_name, 'w') as file:
+            for key, value in sorted(self.content.items(), key=lambda e: float(e[1])):
+                file.write(f'{key}&|&{value}\n')
+
+    def create(self):
+        with open(self.file_name, 'w') as file:
+            pass

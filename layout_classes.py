@@ -51,6 +51,7 @@ class MainWindow:
         AddMenu(root)
         root.configure(background='#6F6F6F')
         root.columnconfigure(0, minsize=100)
+
         self.root = root
         self.buttons = []
         self.bombs_num = 10
@@ -119,6 +120,7 @@ class MainWindow:
         self.frm_field.grid(column=0, row=1, padx=5, pady=5, sticky='swen')
         self.remaining_mines.set(self.bombs_num)
         self.root.bind('<<game_started>>', self.start)
+        self.root.bind('<<you_win!>>', self.win)
         self.time.set(0)
         self.btn_start.configure(text='Have\nFun!')
 
@@ -129,11 +131,13 @@ class MainWindow:
         print('Over')
 
     def win(self, *args):
+        self.root.unbind('<<you_win!>>')
+        self.end_time = time.time() - self.start_time
         self.clock.cancel()
         self.btn_start.configure(text='You\nWin!!!\nAgain?')
         self.lbl_clock.unbind('<<Rise_time>>')
-        self.end_time = time.time() - self.start_time
         print(f'Over by {self.end_time}')
+        self.win_dialog()
 
     def start(self, *args):
         self.tik_tak()
@@ -150,10 +154,22 @@ class MainWindow:
         self.clock.start()
 
     def custom(self, event):
-        DialogWindow(self.root, self, 'c',
-                     first_text='Field\nWidth',
-                     second_text='Field\nHeight',
-                     third_text='Mines')
+        DialogWindow(self.root,
+                     labels=('Field\nWidth', 'Field\nHeight', 'Mines'),
+                     target='custom_window',
+                     parent=self,
+                     title='Custom size',
+                     game_type=self.game_type,
+                     )
 
+    def win_dialog(self, *args):
+        DialogWindow(self.root,
+                     labels=('Name:', 'Time:'),
+                     target='record_window',
+                     title='Record',
+                     parent=self,
+                     time=round(self.end_time, 3),
+                     game_type=self.game_type
+                     )
 
 
