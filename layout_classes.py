@@ -97,6 +97,11 @@ class MainWindow:
         self.root.bind('<<Hard>>', lambda e: self.options((30, 20, 100), hrd='Hard'))
         self.root.bind('<<Custom>>', self.custom)
 
+        self.root.bind('<<Show_Easy>>', lambda e: self.show_results('Easy'))
+        self.root.bind('<<Show_Medium>>', lambda e: self.show_results('Medium'))
+        self.root.bind('<<Show_Hard>>', lambda e: self.show_results('Hard'))
+        self.root.bind('<<Show_Custom>>', lambda e: self.show_results('Custom'))
+
         root.rowconfigure(2, weight=1)
 
     def options(self, opt=(10, 10, 10), hrd='Custom'):
@@ -172,4 +177,13 @@ class MainWindow:
                      game_type=self.game_type
                      )
 
+    def show_results(self, game_type):
+        print(game_type)
+        DialogWindow(self.root,
+                     # labels=('Name:', 'Time:'),
+                     target='show_results',
+                     title=f'Top 10 {game_type}',
+                     parent=self,
+                     game_type=game_type
+                     )
 

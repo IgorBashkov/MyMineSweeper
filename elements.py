@@ -9,6 +9,7 @@ class DialogWindow:
         self.window_type = {
             'custom_window': self.custom_window,
             'record_window': self.record_window,
+            'show_results': self.show_results,
         }
         print(kwargs['title'])
         self.root = root
@@ -21,15 +22,16 @@ class DialogWindow:
         self.values = []
         self.parent = kwargs['parent']
         self.type = kwargs['target']
-        self.window_type[kwargs['target']]()
-        self.file = FileHandler(game_type=kwargs['game_type'])
 
+        self.file = FileHandler(game_type=kwargs['game_type'])
         self.buttons_frm = ttk.Frame(self.dialog)
         self.buttons_frm.grid(row=2, column=0, columnspan=3, pady=4, padx=2)
         self.ok_btn = ttk.Button(self.buttons_frm, text='OK', command=self.ok)
         self.ok_btn.grid(row=0, column=0)
         self.cancel_btn = ttk.Button(self.buttons_frm, text='Cancel', command=self.cancel)
         self.cancel_btn.grid(row=0, column=1)
+
+        self.window_type[kwargs['target']]()
 
         self.dialog.protocol("WM_DELETE_WINDOW", self.cancel)
         self.dialog.transient(self.root)
@@ -70,6 +72,13 @@ class DialogWindow:
         ttk.Label(self.dialog, text=self.kwargs['time']).grid(row=1, column=1)
         self.text_variables['name'] = name
 
+    def show_results(self):
+        self.cancel_btn.destroy()
+        for i, text in enumerate(tuple(self.file.content.items())[:10]):
+            ttk.Label(self.dialog, width=4, text=f'{i+1}.').grid(row=i, column=0)
+            ttk.Label(self.dialog, width=12, text=text[0]).grid(row=i, column=1)
+            ttk.Label(self.dialog, width=8, text=text[1]).grid(row=i, column=2)
+
 
 class AddMenu:
     def __init__(self, root):
@@ -92,17 +101,12 @@ class AddMenu:
                 value=dif,
                 command=lambda: root.event_generate(f'<<{hardness.get()}>>'),
             )
-            print(dif)
-            menu_results.add_command(
+            menu_results.add_radiobutton(
                 label=dif,
-                # variable=hardness,
-                # value=dif,
-                command=lambda: self.in_print(f'<<{dif}>>'),
+                variable=hardness,
+                value=dif,
+                command=lambda: root.event_generate(f'<<Show_{hardness.get()}>>'),
             )
-
-    @staticmethod
-    def in_print(value):
-        print(value)
 
 
 class Cell(ttk.Frame):
